@@ -9,12 +9,13 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Ecosistema Registro 66 - Activo y con Flow"
+    return "Ecosistema Registro 66 - Activo y alante"
 
 # Configuración de Gemini AI
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_KEY:
     genai.configure(api_key=GEMINI_KEY)
+    # Usamos la versión estable del modelo
     model = genai.GenerativeModel('gemini-1.5-flash')
 else:
     model = None
@@ -24,7 +25,7 @@ BOTS_CONFIG = [
     {
         "name": "Cajero",
         "env": "BOT_TOKEN_CAJERO",
-        "prompt": "Eres el Cajero del ecosistema. Hablas con acento cubano natural, fresco, resolutivo y con gracia, sin sonar exagerado ni pesado."
+        "prompt": "Eres el Cajero del ecosistema. Hablas con acento cubano natural, fresco, resolutivo y con gracia, sin sonar exagerado."
     },
     {
         "name": "Notificaciones",
@@ -59,33 +60,32 @@ BOTS_CONFIG = [
 ]
 
 def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
-    """Genera respuestas con flow cubano natural y sin repeticiones."""
+    """Genera respuestas directas con Gemini sin errores de chat."""
     if not model:
-        return "¡Dime! ¿Qué vuelta, todo bien por ahí?"
+        return "Ese, la GEMINI_API_KEY no está puesta en Render."
     try:
-        chat = model.start_chat(history=[])
-        instrucciones = (
-            f"{prompt_personalidad}\n"
-            f"El usuario te escribió: '{mensaje_usuario}'.\n"
-            f"Instrucción: Respóndele con acento cubano auténtico, fresco, con humor y naturalidad (sin palabras forzadas como compay). Breve y directo."
+        prompt_completo = (
+            f"{prompt_personalidad}\n\n"
+            f"Usuario: {mensaje_usuario}\n"
+            f"Responde de forma corta, natural, con acento cubano y buen humor (sin palabras forzadas):"
         )
-        response = chat.send_message(instrucciones)
+        response = model.generate_content(prompt_completo)
         return response.text.strip()
     except Exception as e:
-        print(f"Error con Gemini AI: {e}")
-        return "¡Oime, estamos al fly pero aquí seguimos!"
+        print(f"Error detallado Gemini: {e}")
+        return f"Falla en la directa: {str(e)[:60]}"
 
 def activar_bot(config):
     token = os.getenv(config["env"])
     if not token:
-        print(f"⚠️ Atención: Falta el token para {config['name']} ({config['env']})")
+        print(f"⚠️ Falta el token para {config['name']} ({config['env']})")
         return
 
     bot = telebot.TeleBot(token)
 
     @bot.message_handler(commands=['start', 'help'])
     def mensaje_inicio(message):
-        bot.send_message(message.chat.id, "¡Dime tú! ¿Qué se cuenta por ahí? ¿Todo ready?")
+        bot.send_message(message.chat.id, "¡Dime tú! ¿Qué se cuenta? ¿Todo ready?")
 
     @bot.message_handler(func=lambda message: True)
     def responder_mensaje(message):
