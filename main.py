@@ -4,7 +4,7 @@ from flask import Flask
 import telebot
 import google.generativeai as genai
 
-# Servidor Flask para mantener el servicio activo en Render
+# Servidor Flask
 app = Flask(__name__)
 
 @app.route('/')
@@ -16,11 +16,11 @@ GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_KEY:
     genai.configure(api_key=GEMINI_KEY)
 
-# Estilo cubano de la calle, escribiendo natural (sin tildes formales, con jerga real)
+# Estilo cubano de la calle (sin tildes formales, con jerga real)
 ESTILO_CALLE = (
-    "Habla como un cubano net en la calle, con swing, jerga natural y frescura. "
-    "Escribe fluido, puedes comerte las tildes y redactar como se chatea en WhatsApp en Cuba, "
-    "sin sonar robótico ni usar la palabra compay."
+    "Habla como un cubano en la calle, con swing, jerga natural y frescura. "
+    "Escribe fluido, puedes comerte las tildes y redactar como se chatea por WhatsApp en Cuba, "
+    "sin sonar robotico ni usar la palabra compay."
 )
 
 BOTS_CONFIG = [
@@ -42,12 +42,12 @@ BOTS_CONFIG = [
     {
         "name": "Yan",
         "env": "BOT_TOKEN_YAN",
-        "prompt": f"Eres Yan. {ESTILO_CALLE} Tienes una arrancada espontánea, divertida y criolla."
+        "prompt": f"Eres Yan. {ESTILO_CALLE} Tienes una arrancada espontanea, divertida y criolla."
     },
     {
         "name": "Kiko",
         "env": "BOT_TOKEN_KIKO",
-        "prompt": f"Eres Kiko. {ESTILO_CALLE} Conversas relajado, con simpatía y calle."
+        "prompt": f"Eres Kiko. {ESTILO_CALLE} Conversas relajado, con simpatia y calle."
     },
     {
         "name": "Bot 6",
@@ -62,7 +62,7 @@ BOTS_CONFIG = [
 ]
 
 def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
-    """Genera respuestas conectando con los modelos disponibles de Gemini."""
+    """Genera respuestas capturando cualquier error exacto de Gemini."""
     if not GEMINI_KEY:
         return "Asere, falta poner la GEMINI_API_KEY en Render."
 
@@ -72,13 +72,15 @@ def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
         f"Responde corto, alante y con puro acento cubano de la calle:"
     )
 
-    # Modelos de respaldo para evitar errores 404
+    # Modelos actualizados
     modelos = [
-        'gemini-1.5-flash-latest',
         'gemini-1.5-flash',
-        'gemini-1.5-pro-latest',
+        'gemini-1.5-pro',
+        'gemini-1.0-pro',
         'gemini-pro'
     ]
+
+    ultimo_error = ""
 
     for nombre_modelo in modelos:
         try:
@@ -87,10 +89,11 @@ def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
             if response and response.text:
                 return response.text.strip()
         except Exception as e:
+            ultimo_error = str(e)
             print(f"Error con {nombre_modelo}: {e}")
             continue
 
-    return "Dime tu, ¿que bola? Estoy activo."
+    return f"Error de Gemini: {ultimo_error[:100]}"
 
 def activar_bot(config):
     token = os.getenv(config["env"])
@@ -102,7 +105,7 @@ def activar_bot(config):
 
     @bot.message_handler(commands=['start', 'help'])
     def mensaje_inicio(message):
-        bot.send_message(message.chat.id, "¡Dime tú! ¿Qué bola? ¿Todo ready por ahí?")
+        bot.send_message(message.chat.id, "¡Dime tu! ¿Que bola? ¿Todo ready por ahi?")
 
     @bot.message_handler(func=lambda message: True)
     def responder_mensaje(message):
