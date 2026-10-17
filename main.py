@@ -9,18 +9,21 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Ecosistema Registro 66 - Activo y alante"
+    return "Ecosistema Registro 66 - Activo"
 
 # Configuración de Gemini AI
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_KEY:
     genai.configure(api_key=GEMINI_KEY)
-    # Usamos la versión estable del modelo
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # Cambiamos el nombre del modelo para compatibilidad directa
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+    except Exception:
+        model = genai.GenerativeModel('gemini-pro')
 else:
     model = None
 
-# Configuración de los 7 Bots con sabor cubano y humor natural
+# Configuración de los 7 Bots con acento y humor cubano
 BOTS_CONFIG = [
     {
         "name": "Cajero",
@@ -60,20 +63,28 @@ BOTS_CONFIG = [
 ]
 
 def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
-    """Genera respuestas directas con Gemini sin errores de chat."""
-    if not model:
-        return "Ese, la GEMINI_API_KEY no está puesta en Render."
-    try:
-        prompt_completo = (
-            f"{prompt_personalidad}\n\n"
-            f"Usuario: {mensaje_usuario}\n"
-            f"Responde de forma corta, natural, con acento cubano y buen humor (sin palabras forzadas):"
-        )
-        response = model.generate_content(prompt_completo)
-        return response.text.strip()
-    except Exception as e:
-        print(f"Error detallado Gemini: {e}")
-        return f"Falla en la directa: {str(e)[:60]}"
+    """Genera respuestas probando los modelos disponibles."""
+    if not GEMINI_KEY:
+        return "¡Dime! No me han puesto la GEMINI_API_KEY en Render."
+    
+    prompt_completo = (
+        f"{prompt_personalidad}\n\n"
+        f"Usuario: {mensaje_usuario}\n"
+        f"Instrucción: Respóndele de forma corta, con acento cubano natural, humor y frescura (sin decir compay ni palabras forzadas)."
+    )
+
+    # Intento 1 con gemini-1.5-flash, respaldo en gemini-pro
+    for nombre_modelo in ['gemini-1.5-flash', 'gemini-pro']:
+        try:
+            m = genai.GenerativeModel(nombre_modelo)
+            response = m.generate_content(prompt_completo)
+            if response and response.text:
+                return response.text.strip()
+        except Exception as e:
+            print(f"Error con {nombre_modelo}: {e}")
+            continue
+
+    return "¡Oime, la directa se cayó un segundo pero aquí seguimos!"
 
 def activar_bot(config):
     token = os.getenv(config["env"])
