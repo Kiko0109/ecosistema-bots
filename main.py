@@ -4,17 +4,14 @@ import requests
 from flask import Flask
 import telebot
 
-# Servidor Flask para mantener activo el servicio en Render
 app = Flask(__name__)
 
 @app.route('/')
 def home():
     return "Ecosistema Registro 66 - Activo"
 
-# Clave API de Groq obtenida desde las variables de entorno de Render
 GROQ_KEY = os.getenv("GROQ_API_KEY")
 
-# Instrucción base para comportamiento humano y cubano de calle
 ESTILO_GRUPO = (
     "Habla como un cubano real en Telegram/WhatsApp: con swing, jerga de calle y naturalidad. "
     "Responde ULTRA CORTO (maximo 1 o 2 oraciones). Comete algunas tildes a proposito para parecer humano en celular. "
@@ -69,9 +66,8 @@ def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
         "Content-Type": "application/json"
     }
 
-    # Modelo ultra rápido y estable de Groq
     payload = {
-        "model": "llama3-8b-8192",
+        "model": "llama-3.1-8b-instant",
         "messages": [
             {"role": "system", "content": prompt_personalidad},
             {"role": "user", "content": mensaje_usuario}
@@ -110,7 +106,6 @@ def activar_bot(config):
     print(f"✅ Bot activo: {config['name']}")
     bot.infinity_polling()
 
-# Ejecución en paralelo de los 7 bots
 for config in BOTS_CONFIG:
     hilo = threading.Thread(target=activar_bot, args=(config,))
     hilo.daemon = True
@@ -119,4 +114,3 @@ for config in BOTS_CONFIG:
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-
