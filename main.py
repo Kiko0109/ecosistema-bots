@@ -11,10 +11,10 @@ app = Flask(__name__)
 def home():
     return "Ecosistema Registro 66 - Activo"
 
-# Configuración de Gemini API
+# Configuración de Gemini API forzando la versión estable v1
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_KEY:
-    genai.configure(api_key=GEMINI_KEY)
+    genai.configure(api_key=GEMINI_KEY, api_version='v1')
 
 # Estilo cubano de la calle (comiéndose tildes, estilo WhatsApp/calle)
 ESTILO_CALLE = (
@@ -72,7 +72,6 @@ def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
     )
 
     try:
-        # Usamos directamente el modelo flash limpio
         m = genai.GenerativeModel('gemini-1.5-flash')
         response = m.generate_content(prompt_completo)
         if response and response.text:
