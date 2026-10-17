@@ -4,21 +4,18 @@ import requests
 from flask import Flask
 import telebot
 
-# Servidor Flask para mantener el servicio activo en Render
 app = Flask(__name__)
 
 @app.route('/')
 def home():
     return "Ecosistema Registro 66 - Activo"
 
-# Configuración de Gemini API Key de Render
-GEMINI_KEY = os.getenv("GEMINI_API_KEY")
+GROQ_KEY = os.getenv("GROQ_API_KEY")
 
-# Estilo base: humano, corto, cubano de la calle y enfocado en el proyecto
 ESTILO_GRUPO = (
     "Habla como un cubano real en Telegram/WhatsApp: con swing, jerga de calle y naturalidad. "
     "Responde ULTRA CORTO (maximo 1 o 2 oraciones). Comete algunas tildes a proposito para parecer humano en celular. "
-    "NO saludes de forma robotica ('Hola, ¿en que te puedo ayudar?'), NO uses listas ni viñetas, ni la palabra compay."
+    "NO saludes de forma robotica, NO uses listas ni viñetas, ni la palabra compay."
 )
 
 BOTS_CONFIG = [
@@ -60,49 +57,34 @@ BOTS_CONFIG = [
 ]
 
 def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
-    if not GEMINI_KEY:
-        return "Asere, falta poner la GEMINI_API_KEY en Render."
+    if not GROQ_KEY:
+        return "Asere, falta poner la GROQ_API_KEY en Render."
 
-    headers = {'Content-Type': 'application/json'}
-    
-    prompt_completo = (
-        f"{prompt_personalidad}\n\n"
-        "REGLAS ESTRUCTURALES OBLIGATORIAS:\n"
-        "1. Responde de forma ultra natural, espontanea y realista, como un cubano chateando por WhatsApp/Telegram.\n"
-        "2. NO uses formato de carta, NO saludes formalmente, NO uses viñetas ni listas numeradas.\n"
-        "3. Se breve: maximo 1 o 2 oraciones, directo al grano y con la jerga de la calle.\n\n"
-        f"Mensaje recibido en el grupo: '{mensaje_usuario}'\n"
-        "Respuesta:"
-    )
-
-    payload = {
-        "contents": [{
-            "parts": [{"text": prompt_completo}]
-        }]
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {GROQ_KEY}",
+        "Content-Type": "application/json"
     }
 
-    # Intentos por API REST v1beta y v1 directa por HTTP
-    urls = [
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}",
-        f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={GEMINI_KEY}",
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_KEY}"
-    ]
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+            {"role": "system", "content": prompt_personalidad},
+            {"role": "user", "content": mensaje_usuario}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 150
+    }
 
-    ultimo_error = ""
-
-    for url in urls:
-        try:
-            response = requests.post(url, headers=headers, json=payload, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                return data['candidates'][0]['content']['parts'][0]['text'].strip()
-            else:
-                ultimo_error = f"HTTP {response.status_code}: {response.text[:50]}"
-        except Exception as e:
-            ultimo_error = str(e)
-            continue
-
-    return f"Falla en la directa: {ultimo_error}"
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            return data["choices"][0]["message"]["content"].strip()
+        else:
+            return f"Error Groq ({response.status_code}): {response.text[:50]}"
+    except Exception as e:
+        return f"Error de conexion: {str(e)[:50]}"
 
 def activar_bot(config):
     token = os.getenv(config["env"])
@@ -124,7 +106,6 @@ def activar_bot(config):
     print(f"✅ Bot activo: {config['name']}")
     bot.infinity_polling()
 
-# Lanzar los 7 bots en paralelo con hilos
 for config in BOTS_CONFIG:
     hilo = threading.Thread(target=activar_bot, args=(config,))
     hilo.daemon = True
