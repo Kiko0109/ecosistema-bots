@@ -1,8 +1,8 @@
 import os
 import threading
+import requests
 from flask import Flask
 import telebot
-import google.generativeai as genai
 
 # Servidor Flask para mantener el servicio activo en Render
 app = Flask(__name__)
@@ -11,13 +11,8 @@ app = Flask(__name__)
 def home():
     return "Ecosistema Registro 66 - Activo"
 
-# Configuración de Gemini API
+# Configuración de Gemini API Key
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_KEY:
-    genai.configure(
-        api_key=GEMINI_KEY,
-        client_options={"api_endpoint": "generativelanguage.googleapis.com"}
-    )
 
 # Estilo cubano de la calle (comiéndose tildes, estilo WhatsApp/calle)
 ESTILO_CALLE = (
@@ -68,22 +63,33 @@ def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
     if not GEMINI_KEY:
         return "Asere, falta poner la GEMINI_API_KEY en Render."
 
+    # Usamos la API REST oficial estable v1 con gemini-1.5-flash
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+    
+    headers = {'Content-Type': 'application/json'}
+    
     prompt_completo = (
         f"{prompt_personalidad}\n\n"
         f"El usuario dijo: '{mensaje_usuario}'.\n"
         f"Responde corto, alante y con puro acento cubano de la calle:"
     )
 
-    try:
-        # Petición limpia con el modelo flash v1
-        m = genai.GenerativeModel('gemini-1.5-flash')
-        response = m.generate_content(prompt_completo)
-        if response and response.text:
-            return response.text.strip()
-    except Exception as e:
-        return f"Falla en la directa: {str(e)[:70]}"
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt_completo}]
+        }]
+    }
 
-    return "¡Oime, la directa se cayó un segundo!"
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=15)
+        if response.status_code == 200:
+            data = response.json()
+            texto = data['candidates'][0]['content']['parts'][0]['text']
+            return texto.strip()
+        else:
+            return f"Falla en la directa HTTP ({response.status_code}): {response.text[:80]}"
+    except Exception as e:
+        return f"Error de conexion: {str(e)[:60]}"
 
 def activar_bot(config):
     token = os.getenv(config["env"])
