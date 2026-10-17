@@ -1,108 +1,76 @@
 import os
-import logging
 import threading
-from flask import Flask, jsonify
-import google.generativeai as genai
+from flask import Flask
 import telebot
+import google.generativeai as genai
 
-# Configuración de logs
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
+# Configuración de Flask para mantener Render activo
 app = Flask(__name__)
 
-# Carga de variables de entorno desde Render
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-DATABASE_CHAT_ID = os.environ.get('DATABASE_CHAT_ID')
+@app.route('/')
+def home():
+    return "Ecosistema Registro 66 Activo"
 
-# Tokens de los 7 bots del ecosistema
-BOT_TOKEN_1 = os.environ.get('BOT_TOKEN_CAJERO')
-BOT_TOKEN_2 = os.environ.get('BOT_TOKEN_NOTIFICACIONES')
-BOT_TOKEN_3 = os.environ.get('BOT_TOKEN_BACKEND')
-BOT_TOKEN_YAN = os.environ.get('BOT_TOKEN_YAN')
-BOT_TOKEN_KIKO = os.environ.get('BOT_TOKEN_KIKO')
-BOT_TOKEN_6 = os.environ.get('BOT_TOKEN_6')
-BOT_TOKEN_7 = os.environ.get('BOT_TOKEN_7')
+# Configuración de Gemini AI
+GEMINI_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_KEY:
+    genai.configure(api_key=GEMINI_KEY)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+else:
+    model = None
 
-# Inicialización de Gemini AI
-model = None
-if GEMINI_API_KEY:
+# Mapeo de los 7 bots con sus variables de entorno y personalidades
+BOTS_CONFIG = [
+    {"name": "Cajero", "env": "BOT_TOKEN_CAJERO", "prompt": "Eres el bot Cajero. Habla de forma amable, natural y casual como una persona real."},
+    {"name": "Notificaciones", "env": "BOT_TOKEN_NOTIFICACIONES", "prompt": "Hablas de forma fluida, humana y cercana en español."},
+    {"name": "Backend", "env": "BOT_TOKEN_BACKEND", "prompt": "Responde de forma casual y amigable, como un chat común."},
+    {"name": "Yan", "env": "BOT_TOKEN_YAN", "prompt": "Eres Yan. Hablas de forma totalmente natural, casual y humana, sin dar respuestas de robot."},
+    {"name": "Kiko", "env": "BOT_TOKEN_KIKO", "prompt": "Eres Kiko. Respondes de forma casual, cercana y amigable como una persona normal."},
+    {"name": "Bot 6", "env": "BOT_TOKEN_6", "prompt": "Hablas de forma casual y espontánea en español."},
+    {"name": "Bot 7", "env": "BOT_TOKEN_7", "prompt": "Hablas de forma natural y amigable como cualquier persona en WhatsApp o Telegram."}
+]
+
+def obtener_respuesta_ia(mensaje_usuario, prompt_sistema):
+    """Genera una respuesta natural con Gemini sin textos robóticos."""
+    if not model:
+        return "¡Hola! Todo bien por acá, ¿y tú cómo estás?"
     try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        logger.info("IA Gemini configurada correctamente.")
+        prompt_completo = f"{prompt_sistema}\nEl usuario dijo: '{mensaje_usuario}'. Responde como una persona normal, breve y natural:"
+        response = model.generate_content(prompt_completo)
+        return response.text.strip()
     except Exception as e:
-        logger.error(f"Error al configurar Gemini: {e}")
+        print(f"Error Gemini: {e}")
+        return "¡Hola! Todo bien, ¿qué tal?"
 
-# Función para iniciar la escucha de cada bot en Telegram
-def iniciar_bot(token, nombre_bot):
+def iniciar_bot(config):
+    token = os.getenv(config["env"])
     if not token:
-        logger.warning(f"No se encontró token para {nombre_bot}.")
+        print(f"⚠️ Token no encontrado para: {config['name']} ({config['env']})")
         return
 
     bot = telebot.TeleBot(token)
 
     @bot.message_handler(commands=['start', 'help'])
     def send_welcome(message):
-        bot.reply_to(message, f"¡Hola! Soy {nombre_bot} del Ecosistema 66. ¿En qué te puedo ayudar hoy?")
+        # Respuesta inicial limpia y directa sin cita
+        respuesta = f"¡Hola! ¿Cómo estás?"
+        bot.send_message(message.chat.id, respuesta)
 
     @bot.message_handler(func=lambda message: True)
-    def hablar_como_persona(message):
-        if model:
-            try:
-                prompt = (
-                    f"Actúa como una persona normal y corriente charlando en un chat de Telegram. "
-                    f"Tu nombre es {nombre_bot}. Responde de forma natural, casual y fluida al siguiente mensaje: '{message.text}'"
-                )
-                response = model.generate_content(prompt)
-                texto_respuesta = response.text if response and response.text else "¡Hola! ¿Qué tal?"
-                bot.reply_to(message, texto_respuesta)
-            except Exception as e:
-                logger.error(f"Error al generar respuesta con Gemini para {nombre_bot}: {e}")
-                bot.reply_to(message, f"[{nombre_bot}]: ¡Hola! Todo bien por aquí.")
-        else:
-            bot.reply_to(message, f"[{nombre_bot}] Recibido: {message.text}")
+    def handle_all_messages(message):
+        # Generar respuesta casual de IA y enviarla limpia al chat
+        respuesta = obtener_respuesta_ia(message.text, config["prompt"])
+        bot.send_message(message.chat.id, respuesta)
 
-    logger.info(f"Iniciando polling para {nombre_bot}...")
-    try:
-        bot.infinity_polling(timeout=10, long_polling_timeout=5)
-    except Exception as e:
-        logger.error(f"Error en {nombre_bot}: {e}")
+    print(f"✅ Bot encendido: {config['name']}")
+    bot.infinity_polling()
 
-# Rutas del servidor Flask (para mantener el servicio activo en Render)
-@app.route('/', methods=['GET'])
-def index():
-    return jsonify({
-        "status": "online",
-        "system": "Ecosistema 7 Bots + Gemini AI",
-        "database_channel": DATABASE_CHAT_ID
-    }), 200
+# Iniciar los 7 bots en hilos independientes
+for config in BOTS_CONFIG:
+    t = threading.Thread(target=iniciar_bot, args=(config,))
+    t.daemon = True
+    t.start()
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    return jsonify({"status": "healthy"}), 200
-
-# Función para encender todos los bots en hilos paralelos (en segundo plano)
-def arrancar_hilos_bots():
-    tokens = [
-        (BOT_TOKEN_1, "Bot Cajero"),
-        (BOT_TOKEN_2, "Bot Notificaciones"),
-        (BOT_TOKEN_3, "Bot Backend"),
-        (BOT_TOKEN_YAN, "Yan"),
-        (BOT_TOKEN_KIKO, "Kiko"),
-        (BOT_TOKEN_6, "Bot IA 6"),
-        (BOT_TOKEN_7, "Bot IA 7")
-    ]
-
-    for token, nombre in tokens:
-        if token:
-            hilo = threading.Thread(target=iniciar_bot, args=(token, nombre), daemon=True)
-            hilo.start()
-
-if __name__ == '__main__':
-    # Lanzar la escucha de los bots
-    arrancar_hilos_bots()
-
-    # Iniciar servidor web de Flask
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
