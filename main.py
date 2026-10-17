@@ -71,21 +71,16 @@ def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
         f"Responde corto, alante y con puro acento cubano de la calle:"
     )
 
-    intentos = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
-    ultimo_error = ""
+    try:
+        # Usamos directamente el modelo flash limpio
+        m = genai.GenerativeModel('gemini-1.5-flash')
+        response = m.generate_content(prompt_completo)
+        if response and response.text:
+            return response.text.strip()
+    except Exception as e:
+        return f"Falla en la directa: {str(e)[:70]}"
 
-    for modelo_nombre in intentos:
-        try:
-            m = genai.GenerativeModel(modelo_nombre)
-            response = m.generate_content(prompt_completo)
-            if response and response.text:
-                return response.text.strip()
-        except Exception as e:
-            ultimo_error = str(e)
-            print(f"Error con {modelo_nombre}: {e}")
-            continue
-
-    return f"Falla en la directa: {ultimo_error[:80]}"
+    return "¡Oime, la directa se cayó un segundo!"
 
 def activar_bot(config):
     token = os.getenv(config["env"])
