@@ -1,4 +1,5 @@
 flask
-requests
+pyTelegramBotAPI
 google-generativeai
-pytelegrambotapi
+supabase
+redis
