@@ -15,66 +15,72 @@ def home():
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_KEY:
     genai.configure(api_key=GEMINI_KEY)
-    # Cambiamos el nombre del modelo para compatibilidad directa
-    try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-    except Exception:
-        model = genai.GenerativeModel('gemini-pro')
-else:
-    model = None
 
-# Configuración de los 7 Bots con acento y humor cubano
+# Estilo cubano de la calle, escribiendo natural (sin tildes formales, con jerga real)
+ESTILO_CALLE = (
+    "Habla como un cubano net en la calle, con swing, jerga natural y frescura. "
+    "Escribe fluido, puedes comerte las tildes y redactar como se chatea en WhatsApp en Cuba, "
+    "sin sonar robótico ni usar la palabra compay."
+)
+
 BOTS_CONFIG = [
     {
         "name": "Cajero",
         "env": "BOT_TOKEN_CAJERO",
-        "prompt": "Eres el Cajero del ecosistema. Hablas con acento cubano natural, fresco, resolutivo y con gracia, sin sonar exagerado."
+        "prompt": f"Eres el Cajero. {ESTILO_CALLE} Resuelve los mambises con efectividad y calle."
     },
     {
         "name": "Notificaciones",
         "env": "BOT_TOKEN_NOTIFICACIONES",
-        "prompt": "Eres el bot de Notificaciones. Conversas con la chispa y el piquete cubano, bien humano y relajado."
+        "prompt": f"Eres el bot de Notificaciones. {ESTILO_CALLE} Suelta la directa con chispa."
     },
     {
         "name": "Backend",
         "env": "BOT_TOKEN_BACKEND",
-        "prompt": "Eres el backend del equipo. Hablas directo, con flow cubano natural, cero robot y con buena onda."
+        "prompt": f"Eres el Backend. {ESTILO_CALLE} Directo al grano, sin rodeos y con flow."
     },
     {
         "name": "Yan",
         "env": "BOT_TOKEN_YAN",
-        "prompt": "Eres Yan. Tienes una arrancada cubana espontánea, divertida, hablas fluido y con gracia criolla."
+        "prompt": f"Eres Yan. {ESTILO_CALLE} Tienes una arrancada espontánea, divertida y criolla."
     },
     {
         "name": "Kiko",
         "env": "BOT_TOKEN_KIKO",
-        "prompt": "Eres Kiko. Conversas como un cubano net, resolviendo la directa con naturalidad y simpatía."
+        "prompt": f"Eres Kiko. {ESTILO_CALLE} Conversas relajado, con simpatía y calle."
     },
     {
         "name": "Bot 6",
         "env": "BOT_TOKEN_6",
-        "prompt": "Hablas con un tono cubano relajado, conversacional, con su chispa de humor característico."
+        "prompt": f"Eres el Bot 6. {ESTILO_CALLE} Hablas con swing y mucha naturalidad."
     },
     {
         "name": "Bot 7",
         "env": "BOT_TOKEN_7",
-        "prompt": "Eres un bot con swing cubano, fresco, directo y hablas como cualquier persona de allá mismo conversando."
+        "prompt": f"Eres el Bot 7. {ESTILO_CALLE} Fresco, directo y con el piquete arriba."
     }
 ]
 
 def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
-    """Genera respuestas probando los modelos disponibles."""
+    """Genera respuestas conectando con los modelos disponibles de Gemini."""
     if not GEMINI_KEY:
-        return "¡Dime! No me han puesto la GEMINI_API_KEY en Render."
-    
+        return "Asere, falta poner la GEMINI_API_KEY en Render."
+
     prompt_completo = (
         f"{prompt_personalidad}\n\n"
-        f"Usuario: {mensaje_usuario}\n"
-        f"Instrucción: Respóndele de forma corta, con acento cubano natural, humor y frescura (sin decir compay ni palabras forzadas)."
+        f"El usuario dijo: '{mensaje_usuario}'.\n"
+        f"Responde corto, alante y con puro acento cubano de la calle:"
     )
 
-    # Intento 1 con gemini-1.5-flash, respaldo en gemini-pro
-    for nombre_modelo in ['gemini-1.5-flash', 'gemini-pro']:
+    # Modelos de respaldo para evitar errores 404
+    modelos = [
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-flash',
+        'gemini-1.5-pro-latest',
+        'gemini-pro'
+    ]
+
+    for nombre_modelo in modelos:
         try:
             m = genai.GenerativeModel(nombre_modelo)
             response = m.generate_content(prompt_completo)
@@ -84,7 +90,7 @@ def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
             print(f"Error con {nombre_modelo}: {e}")
             continue
 
-    return "¡Oime, la directa se cayó un segundo pero aquí seguimos!"
+    return "Dime tu, ¿que bola? Estoy activo."
 
 def activar_bot(config):
     token = os.getenv(config["env"])
@@ -96,7 +102,7 @@ def activar_bot(config):
 
     @bot.message_handler(commands=['start', 'help'])
     def mensaje_inicio(message):
-        bot.send_message(message.chat.id, "¡Dime tú! ¿Qué se cuenta? ¿Todo ready?")
+        bot.send_message(message.chat.id, "¡Dime tú! ¿Qué bola? ¿Todo ready por ahí?")
 
     @bot.message_handler(func=lambda message: True)
     def responder_mensaje(message):
@@ -106,7 +112,7 @@ def activar_bot(config):
     print(f"✅ Bot activo: {config['name']}")
     bot.infinity_polling()
 
-# Lanzar los 7 bots en paralelo
+# Lanzar los 7 bots en paralelo con hilos
 for config in BOTS_CONFIG:
     hilo = threading.Thread(target=activar_bot, args=(config,))
     hilo.daemon = True
