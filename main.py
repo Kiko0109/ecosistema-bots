@@ -19,28 +19,29 @@ if GEMINI_KEY:
 else:
     model = None
 
-# Mapeo de los 7 bots con sus variables de entorno y personalidades
+# Mapeo de los 7 bots con personalidades humanas y cercanas
 BOTS_CONFIG = [
-    {"name": "Cajero", "env": "BOT_TOKEN_CAJERO", "prompt": "Eres el bot Cajero. Habla de forma amable, natural y casual como una persona real."},
-    {"name": "Notificaciones", "env": "BOT_TOKEN_NOTIFICACIONES", "prompt": "Hablas de forma fluida, humana y cercana en español."},
-    {"name": "Backend", "env": "BOT_TOKEN_BACKEND", "prompt": "Responde de forma casual y amigable, como un chat común."},
-    {"name": "Yan", "env": "BOT_TOKEN_YAN", "prompt": "Eres Yan. Hablas de forma totalmente natural, casual y humana, sin dar respuestas de robot."},
-    {"name": "Kiko", "env": "BOT_TOKEN_KIKO", "prompt": "Eres Kiko. Respondes de forma casual, cercana y amigable como una persona normal."},
-    {"name": "Bot 6", "env": "BOT_TOKEN_6", "prompt": "Hablas de forma casual y espontánea en español."},
-    {"name": "Bot 7", "env": "BOT_TOKEN_7", "prompt": "Hablas de forma natural y amigable como cualquier persona en WhatsApp o Telegram."}
+    {"name": "Cajero", "env": "BOT_TOKEN_CAJERO", "prompt": "Eres una persona real y corriente charlando por chat. Responde de forma muy natural, breve, casual y amigable."},
+    {"name": "Notificaciones", "env": "BOT_TOKEN_NOTIFICACIONES", "prompt": "Eres una persona conversando de forma fluida, cercana y normal en español."},
+    {"name": "Backend", "env": "BOT_TOKEN_BACKEND", "prompt": "Hablas como cualquier persona en una app de mensajería: casual, directo y natural."},
+    {"name": "Yan", "env": "BOT_TOKEN_YAN", "prompt": "Eres Yan, una persona real chateando. Responde de manera espontánea, coloquial y totalmente humana, sin sonar a robot."},
+    {"name": "Kiko", "env": "BOT_TOKEN_KIKO", "prompt": "Eres Kiko. Hablas de forma súper casual, cercana y corriente, como un amigo más."},
+    {"name": "Bot 6", "env": "BOT_TOKEN_6", "prompt": "Responde de forma natural, relajada y conversacional."},
+    {"name": "Bot 7", "env": "BOT_TOKEN_7", "prompt": "Hablas de forma completamente fluida, humana y sencilla."}
 ]
 
 def obtener_respuesta_ia(mensaje_usuario, prompt_sistema):
-    """Genera una respuesta natural con Gemini sin textos robóticos."""
+    """Genera una conversación fluida y natural usando Gemini."""
     if not model:
-        return "¡Hola! Todo bien por acá, ¿y tú cómo estás?"
+        return "¡Qué onda! ¿Todo bien por ahí o qué?"
     try:
-        prompt_completo = f"{prompt_sistema}\nEl usuario dijo: '{mensaje_usuario}'. Responde como una persona normal, breve y natural:"
-        response = model.generate_content(prompt_completo)
+        chat = model.start_chat(history=[])
+        prompt_completo = f"{prompt_sistema}\n\nUsuario: {mensaje_usuario}\nResponde de forma natural, corta y humana:"
+        response = chat.send_message(prompt_completo)
         return response.text.strip()
     except Exception as e:
         print(f"Error Gemini: {e}")
-        return "¡Hola! Todo bien, ¿qué tal?"
+        return "¡Ey! ¿Qué tal todo?"
 
 def iniciar_bot(config):
     token = os.getenv(config["env"])
@@ -52,13 +53,10 @@ def iniciar_bot(config):
 
     @bot.message_handler(commands=['start', 'help'])
     def send_welcome(message):
-        # Respuesta inicial limpia y directa sin cita
-        respuesta = f"¡Hola! ¿Cómo estás?"
-        bot.send_message(message.chat.id, respuesta)
+        bot.send_message(message.chat.id, "¡Hola! ¿Qué se cuenta? ¿Todo bien?")
 
     @bot.message_handler(func=lambda message: True)
     def handle_all_messages(message):
-        # Generar respuesta casual de IA y enviarla limpia al chat
         respuesta = obtener_respuesta_ia(message.text, config["prompt"])
         bot.send_message(message.chat.id, respuesta)
 
