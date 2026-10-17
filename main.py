@@ -4,19 +4,19 @@ from flask import Flask
 import telebot
 import google.generativeai as genai
 
-# Servidor Flask
+# Servidor Flask para Render
 app = Flask(__name__)
 
 @app.route('/')
 def home():
     return "Ecosistema Registro 66 - Activo"
 
-# Configuración de Gemini AI
+# Configuración de Gemini API
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_KEY:
     genai.configure(api_key=GEMINI_KEY)
 
-# Estilo cubano de la calle (sin tildes formales, con jerga real)
+# Prompts estilo callejero cubano (comiéndose tildes, estilo WhatsApp/calle)
 ESTILO_CALLE = (
     "Habla como un cubano en la calle, con swing, jerga natural y frescura. "
     "Escribe fluido, puedes comerte las tildes y redactar como se chatea por WhatsApp en Cuba, "
@@ -62,7 +62,6 @@ BOTS_CONFIG = [
 ]
 
 def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
-    """Genera respuestas capturando cualquier error exacto de Gemini."""
     if not GEMINI_KEY:
         return "Asere, falta poner la GEMINI_API_KEY en Render."
 
@@ -72,19 +71,19 @@ def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
         f"Responde corto, alante y con puro acento cubano de la calle:"
     )
 
-    # Modelos actualizados
+    # Nombres de modelos válidos actuales
     modelos = [
+        'models/gemini-1.5-flash',
         'gemini-1.5-flash',
-        'gemini-1.5-pro',
-        'gemini-1.0-pro',
-        'gemini-pro'
+        'models/gemini-1.5-pro',
+        'gemini-1.5-pro'
     ]
 
     ultimo_error = ""
 
     for nombre_modelo in modelos:
         try:
-            m = genai.GenerativeModel(nombre_modelo)
+            m = genai.GenerativeModel(model_name=nombre_modelo)
             response = m.generate_content(prompt_completo)
             if response and response.text:
                 return response.text.strip()
