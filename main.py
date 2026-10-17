@@ -1,6 +1,6 @@
 import os
 import threading
-from flask import Flask
+from Flask import Flask
 import telebot
 import google.generativeai as genai
 
@@ -71,28 +71,23 @@ def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
         f"Responde corto, alante y con puro acento cubano de la calle:"
     )
 
-    # Nombres de modelos válidos actuales
-    modelos = [
-        'models/gemini-1.5-flash',
-        'gemini-1.5-flash',
-        'models/gemini-1.5-pro',
-        'gemini-1.5-pro'
-    ]
-
+    # Probamos inicializar sin prefijos de ruta para que la librería tome el predeterminado actual
+    intentos = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
     ultimo_error = ""
 
-    for nombre_modelo in modelos:
+    for modelo_nombre in intentos:
         try:
-            m = genai.GenerativeModel(model_name=nombre_modelo)
+            # Forzamos una llamada limpia sin v1beta explícita
+            m = genai.GenerativeModel(modelo_nombre)
             response = m.generate_content(prompt_completo)
             if response and response.text:
                 return response.text.strip()
         except Exception as e:
             ultimo_error = str(e)
-            print(f"Error con {nombre_modelo}: {e}")
+            print(f"Error con {modelo_nombre}: {e}")
             continue
 
-    return f"Error de Gemini: {ultimo_error[:100]}"
+    return f"Falla en la directa: {ultimo_error[:80]}"
 
 def activar_bot(config):
     token = os.getenv(config["env"])
