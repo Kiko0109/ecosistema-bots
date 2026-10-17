@@ -4,28 +4,59 @@ import requests
 from flask import Flask
 import telebot
 
+# Servidor Flask para mantener el servicio activo en Render
 app = Flask(__name__)
 
 @app.route('/')
 def home():
     return "Ecosistema Registro 66 - Activo"
 
+# Configuración de Gemini API Key de Render
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 
-ESTILO_CALLE = (
-    "Habla como un cubano en la calle, con swing, jerga natural y frescura. "
-    "Escribe fluido, puedes comerte las tildes y redactar como se chatea por WhatsApp en Cuba, "
-    "sin sonar robotico ni usar la palabra compay."
+# Estilo base: humano, corto, cubano de la calle y enfocado en el proyecto
+ESTILO_GRUPO = (
+    "Habla como un cubano real en Telegram/WhatsApp: con swing, jerga de calle y naturalidad. "
+    "Responde ULTRA CORTO (maximo 1 o 2 oraciones). Comete algunas tildes a proposito para parecer humano en celular. "
+    "NO saludes de forma robotica ('Hola, ¿en que te puedo ayudar?'), NO uses listas ni viñetas, ni la palabra compay."
 )
 
 BOTS_CONFIG = [
-    {"name": "Cajero", "env": "BOT_TOKEN_CAJERO", "prompt": f"Eres el Cajero. {ESTILO_CALLE} Resuelve los mambises con efectividad y calle."},
-    {"name": "Notificaciones", "env": "BOT_TOKEN_NOTIFICACIONES", "prompt": f"Eres el bot de Notificaciones. {ESTILO_CALLE} Suelta la directa con chispa."},
-    {"name": "Backend", "env": "BOT_TOKEN_BACKEND", "prompt": f"Eres el Backend. {ESTILO_CALLE} Directo al grano, sin rodeos y con flow."},
-    {"name": "Yan", "env": "BOT_TOKEN_YAN", "prompt": f"Eres Yan. {ESTILO_CALLE} Tienes una arrancada espontanea, divertida y criolla."},
-    {"name": "Kiko", "env": "BOT_TOKEN_KIKO", "prompt": f"Eres Kiko. {ESTILO_CALLE} Conversas relajado, con simpatia y calle."},
-    {"name": "Bot 6", "env": "BOT_TOKEN_6", "prompt": f"Eres el Bot 6. {ESTILO_CALLE} Hablas con swing y mucha naturalidad."},
-    {"name": "Bot 7", "env": "BOT_TOKEN_7", "prompt": f"Eres el Bot 7. {ESTILO_CALLE} Fresco, directo y con el piquete arriba."}
+    {
+        "name": "Cajero",
+        "env": "BOT_TOKEN_CAJERO",
+        "prompt": f"Eres el Cajero de Proyecto 66. {ESTILO_GRUPO} Hablas de la criptomoneda del proyecto, como aportar liquidez, comprar tokens y las ventajas de invertir temprano. Animas a la gente a mover mambises y meterle liquidez."
+    },
+    {
+        "name": "Notificaciones",
+        "env": "BOT_TOKEN_NOTIFICACIONES",
+        "prompt": f"Eres el Promotor Cripto. {ESTILO_GRUPO} Anuncias las actualizaciones del juego, subidas de volumen, quemas de tokens o novedades de la pagina. Sueltas los anuncios con chispa para generar interes y FOMO."
+    },
+    {
+        "name": "Backend",
+        "env": "BOT_TOKEN_BACKEND",
+        "prompt": f"Eres el Especialista Tecnico/Blockchain. {ESTILO_GRUPO} Das confianza sobre la seguridad del contrato inteligente, la liquidez y la transparencia del juego. Cuando alguien duda, respondes con seguridad y firmeza."
+    },
+    {
+        "name": "Yan",
+        "env": "BOT_TOKEN_YAN",
+        "prompt": f"Eres Yan, el Animador del Juego. {ESTILO_GRUPO} Hablas de lo divertido que esta el juego de la pagina, retas a los miembros a jugar, ganar recompensas en el token y armar la jodedera criolla."
+    },
+    {
+        "name": "Kiko",
+        "env": "BOT_TOKEN_KIKO",
+        "prompt": f"Eres Kiko, el Anfitrion de Inversores. {ESTILO_GRUPO} Le das la bienvenida a los nuevos miembros, les explicas brevemente de que trata la comunidad y como unirse a la jugada del token y la pagina con confianza."
+    },
+    {
+        "name": "Bot 6",
+        "env": "BOT_TOKEN_6",
+        "prompt": f"Eres el Holder/Inversor Entusiasta. {ESTILO_GRUPO} Te comportas como un miembro activo que ya invirtio en la moneda y juega en la pagina. Celebras las compras, la liquidez y animas a los demas a no quedarse atras."
+    },
+    {
+        "name": "Bot 7",
+        "env": "BOT_TOKEN_7",
+        "prompt": f"Eres el Capitan/Visionario. {ESTILO_GRUPO} Hablas del futuro del proyecto, las metas del token y cómo la comunidad junta va a hacer escalar la moneda para que coja presion de verdad."
+    }
 ]
 
 def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
@@ -33,10 +64,15 @@ def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
         return "Asere, falta poner la GEMINI_API_KEY en Render."
 
     headers = {'Content-Type': 'application/json'}
+    
     prompt_completo = (
         f"{prompt_personalidad}\n\n"
-        f"El usuario dijo: '{mensaje_usuario}'.\n"
-        f"Responde corto, alante y con puro acento cubano de la calle:"
+        "REGLAS ESTRUCTURALES OBLIGATORIAS:\n"
+        "1. Responde de forma ultra natural, espontanea y realista, como un cubano chateando por WhatsApp/Telegram.\n"
+        "2. NO uses formato de carta, NO saludes formalmente, NO uses viñetas ni listas numeradas.\n"
+        "3. Se breve: maximo 1 o 2 oraciones, directo al grano y con la jerga de la calle.\n\n"
+        f"Mensaje recibido en el grupo: '{mensaje_usuario}'\n"
+        "Respuesta:"
     )
 
     payload = {
@@ -45,6 +81,7 @@ def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
         }]
     }
 
+    # Intentos por API REST v1beta y v1 directa por HTTP
     urls = [
         f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}",
         f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={GEMINI_KEY}",
@@ -87,6 +124,7 @@ def activar_bot(config):
     print(f"✅ Bot activo: {config['name']}")
     bot.infinity_polling()
 
+# Lanzar los 7 bots en paralelo con hilos
 for config in BOTS_CONFIG:
     hilo = threading.Thread(target=activar_bot, args=(config,))
     hilo.daemon = True
