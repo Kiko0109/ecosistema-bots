@@ -4,7 +4,7 @@ from flask import Flask
 import telebot
 import google.generativeai as genai
 
-# Servidor Flask para Render
+# Servidor Flask para mantener el servicio activo en Render
 app = Flask(__name__)
 
 @app.route('/')
@@ -16,7 +16,7 @@ GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 if GEMINI_KEY:
     genai.configure(api_key=GEMINI_KEY)
 
-# Prompts estilo callejero cubano (comiéndose tildes, estilo WhatsApp/calle)
+# Estilo cubano de la calle (comiéndose tildes, estilo WhatsApp/calle)
 ESTILO_CALLE = (
     "Habla como un cubano en la calle, con swing, jerga natural y frescura. "
     "Escribe fluido, puedes comerte las tildes y redactar como se chatea por WhatsApp en Cuba, "
