@@ -1,6 +1,6 @@
 import os
 import threading
-from Flask import Flask
+from flask import Flask
 import telebot
 import google.generativeai as genai
 
@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Ecosistema Registro 66 - Activando el caché cubano"
+    return "Ecosistema Registro 66 - Activo y con Flow"
 
 # Configuración de Gemini AI
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
@@ -19,12 +19,12 @@ if GEMINI_KEY:
 else:
     model = None
 
-# Configuración de los 7 Bots con sabor cubano, humor y naturalidad
+# Configuración de los 7 Bots con sabor cubano y humor natural
 BOTS_CONFIG = [
     {
         "name": "Cajero",
         "env": "BOT_TOKEN_CAJERO",
-        "prompt": "Eres el Cajero del ecosistema. Hablas con acento cubano natural, fresco, resolutivo y con gracia, pero sin sonar exagerado ni callejero pesado."
+        "prompt": "Eres el Cajero del ecosistema. Hablas con acento cubano natural, fresco, resolutivo y con gracia, sin sonar exagerado ni pesado."
     },
     {
         "name": "Notificaciones",
@@ -61,38 +61,38 @@ BOTS_CONFIG = [
 def generar_respuesta_humana(mensaje_usuario, prompt_personalidad):
     """Genera respuestas con flow cubano natural y sin repeticiones."""
     if not model:
-        return "¡Dime asere! ¿Qué vuelta, todo en talla por ahí?"
+        return "¡Dime! ¿Qué vuelta, todo bien por ahí?"
     try:
         chat = model.start_chat(history=[])
         instrucciones = (
             f"{prompt_personalidad}\n"
-            f"El usuario te soltó esto: '{mensaje_usuario}'.\n"
-            f"Instrucción: Respóndele con acento cubano auténtico, fresco, con humor y naturalidad (sin abusar de palabras forzadas). Breve y alante."
+            f"El usuario te escribió: '{mensaje_usuario}'.\n"
+            f"Instrucción: Respóndele con acento cubano auténtico, fresco, con humor y naturalidad (sin palabras forzadas como compay). Breve y directo."
         )
         response = chat.send_message(instrucciones)
         return response.text.strip()
     except Exception as e:
         print(f"Error con Gemini AI: {e}")
-        return "¡Oime, la cosa está echando humo pero aquí estamos!"
+        return "¡Oime, estamos al fly pero aquí seguimos!"
 
 def activar_bot(config):
     token = os.getenv(config["env"])
     if not token:
-        print(f"⚠️ ¡Ojo! Falta el token para {config['name']} ({config['env']})")
+        print(f"⚠️ Atención: Falta el token para {config['name']} ({config['env']})")
         return
 
     bot = telebot.TeleBot(token)
 
     @bot.message_handler(commands=['start', 'help'])
     def mensaje_inicio(message):
-        bot.send_message(message.chat.id, "¡Dime tú! ¿Qué se cuenta por la pista? ¿Todo ready?")
+        bot.send_message(message.chat.id, "¡Dime tú! ¿Qué se cuenta por ahí? ¿Todo ready?")
 
     @bot.message_handler(func=lambda message: True)
     def responder_mensaje(message):
         respuesta = generar_respuesta_humana(message.text, config["prompt"])
         bot.send_message(message.chat.id, respuesta)
 
-    print(f"✅ ¡Bot activo con sabor cubano: {config['name']}!")
+    print(f"✅ Bot activo: {config['name']}")
     bot.infinity_polling()
 
 # Lanzar los 7 bots en paralelo
